@@ -1,0 +1,15 @@
+# Render Blueprint — 물때 홈페이지 (koreatide.com)
+# Render 대시보드에서 이 저장소를 연결하면 자동 인식됩니다.
+services:
+  - type: web
+    name: koreatide
+    runtime: python
+    plan: free
+    region: singapore            # 한국과 가까운 리전
+    buildCommand: "pip install -r requirements-web.txt"
+    startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60"
+    envVars:
+      - key: KHOA_API_KEY        # 값은 대시보드에서 직접 입력(커밋 금지)
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.4"

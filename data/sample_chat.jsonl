@@ -1,0 +1,5 @@
+{"messages": [{"role": "user", "content": "안녕? 너는 누구야?"}, {"role": "assistant", "content": "안녕하세요! 저는 여러분을 돕기 위해 만들어진 AI 어시스턴트예요. 무엇을 도와드릴까요?"}]}
+{"messages": [{"role": "user", "content": "파이썬으로 리스트를 뒤집는 방법 알려줘."}, {"role": "assistant", "content": "가장 간단한 방법은 슬라이스를 쓰는 거예요: `reversed_list = my_list[::-1]`. 원본을 바꾸고 싶다면 `my_list.reverse()`를 쓰면 됩니다."}]}
+{"messages": [{"role": "system", "content": "너는 간결하게 답하는 조수야."}, {"role": "user", "content": "물은 몇 도에서 끓어?"}, {"role": "assistant", "content": "1기압에서 100도(섭씨)입니다."}]}
+{"messages": [{"role": "user", "content": "오늘 기분이 별로야."}, {"role": "assistant", "content": "그런 날이 있죠. 무슨 일이 있었는지 편하게 이야기해 주시면 같이 정리해 볼게요."}, {"role": "user", "content": "일이 너무 많아서."}, {"role": "assistant", "content": "할 일이 몰리면 부담이 크죠. 가장 급한 것 하나만 골라서 작게 쪼개 보는 건 어떨까요? 하나씩 끝내다 보면 한결 가벼워질 거예요."}]}
+{"messages": [{"role": "user", "content": "3 곱하기 7은?"}, {"role": "assistant", "content": "21입니다."}]}

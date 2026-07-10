@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 물때 — 대한민국 만조·간조·물때</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root{
+    --bg:#0b1220; --card:#131c2e; --line:#233047; --fg:#e8edf6; --mut:#8b98b0;
+    --hi:#4aa3ff; --lo:#f0a020; --spring:#ff5a76; --neap:#3ec7c2; --mid:#8b98b0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font-family:system-ui,'Segoe UI','Malgun Gothic',sans-serif;line-height:1.5}
+  header{padding:22px 18px 10px;text-align:center}
+  header h1{margin:0;font-size:22px;letter-spacing:-.3px}
+  header .sub{color:var(--mut);font-size:13px;margin-top:4px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+            padding:12px 16px;position:sticky;top:0;background:var(--bg);z-index:600;
+            border-bottom:1px solid var(--line)}
+  .controls input,.controls select,.controls button{
+    background:var(--card);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 11px;font-size:15px}
+  .controls button{cursor:pointer}
+  .controls #go{background:var(--hi);border-color:var(--hi);color:#04101f;font-weight:700}
+  .controls button:active{transform:translateY(1px)}
+  #wrap{max-width:760px;margin:0 auto;padding:16px}
+  #map{height:340px;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px;display:none}
+  .maphint{color:var(--mut);font-size:13px;text-align:center;padding:8px}
+  .note{color:var(--mut);font-size:13px;text-align:center;padding:8px}
+  .err{color:#ffb4bf;text-align:center;padding:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:14px 16px;margin:12px 0}
+  .card .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .date{font-size:17px;font-weight:700}
+  .wd{color:var(--mut);font-size:14px}
+  .badge{margin-left:auto;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700}
+  .b-spring{background:rgba(255,90,118,.18);color:var(--spring)}
+  .b-neap{background:rgba(62,199,194,.16);color:var(--neap)}
+  .b-mid{background:rgba(139,152,176,.16);color:var(--mid)}
+  .range{color:var(--mut);font-size:13px;margin:4px 0}
+  svg.curve{width:100%;height:120px;display:block;margin:6px 0}
+  .tides{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+  .chip{display:flex;flex-direction:column;align-items:center;min-width:74px;
+        border:1px solid var(--line);border-radius:10px;padding:6px 9px}
+  .chip .t{font-size:15px;font-weight:700}
+  .chip .k{font-size:12px;margin-top:2px}
+  .chip.hi .k{color:var(--hi)} .chip.lo .k{color:var(--lo)}
+  .chip .v{font-size:12px;color:var(--mut)}
+  .advice{background:rgba(74,163,255,.07);border:1px solid var(--line);
+          border-radius:10px;padding:10px 12px;margin-top:8px;font-size:14px}
+  .advice .warn{color:#ffcf8a}
+  .tags{margin-top:6px}
+  .tag{display:inline-block;background:#1c2740;color:var(--mut);border-radius:6px;
+       padding:2px 8px;font-size:12px;margin:2px 4px 0 0}
+  footer{color:var(--mut);font-size:12px;text-align:center;padding:20px}
+  .leaflet-popup-content{margin:8px 10px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌊 우리 물때</h1>
+  <div class="sub">국립해양조사원(KHOA) 공식 예측 · 전국 조위관측소 만조·간조·물때</div>
+</header>
+
+<div class="controls">
+  <input id="station" list="stationList" placeholder="지점 (예: 인천)" autocomplete="off">
+  <datalist id="stationList"></datalist>
+  <input id="date" type="date">
+  <select id="days">
+    <option value="1">하루</option>
+    <option value="3">3일</option>
+    <option value="7" selected>주간(7일)</option>
+    <option value="14">2주</option>
+  </select>
+  <button id="go">조회</button>
+  <button id="mapBtn" title="지도에서 지점 선택">🗺 지도</button>
+</div>
+
+<div id="wrap">
+  <div id="map"></div>
+  <div class="maphint" id="mapHint" style="display:none"></div>
+  <div class="note" id="note">지점과 날짜를 고르고 '조회'를 누르세요. (지도 버튼으로 위치 선택 가능)</div>
+  <div id="result"></div>
+</div>
+
+<footer>값은 KHOA 예측 기반. 물때 이름은 서해 7물때식 관례이며 지역차가 있습니다. 안전 정보는 참고용입니다.</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const todayISO = () => new Date().toLocaleDateString('sv-SE');
+let STATIONS = [];
+let map = null, mapReady = false;
+
+async function loadStations(){
+  try{
+    const r = await fetch('/api/stations'); STATIONS = await r.json();
+    $('#stationList').innerHTML = STATIONS.map(s => `<option value="${s.name}">`).join('');
+  }catch(e){}
+}
+
+function badgeInfo(day){
+  const a = day.advice||{};
+  if(a.is_spring) return ['b-spring','사리'];
+  if(a.is_neap) return ['b-neap','조금'];
+  return ['b-mid','중간'];
+}
+
+// 조위 곡선 SVG
+function curveSVG(day){
+  const s = day.series||[];
+  if(s.length < 3) return '';
+  const W=680,H=120,pl=6,pr=6,pt=16,pb=18, iw=W-pl-pr, ih=H-pt-pb;
+  const levels=s.map(p=>p.level);
+  let mn=Math.min(...levels), mx=Math.max(...levels);
+  if(mx-mn<10){mx+=10;mn-=10;}
+  const pad=(mx-mn)*0.12; mn-=pad; mx+=pad;
+  const X=m=>pl + (m/1440)*iw;
+  const Y=l=>pt + (1-(l-mn)/(mx-mn))*ih;
+  const pts = s.map(p=>`${X(p.min).toFixed(1)},${Y(p.level).toFixed(1)}`).join(' ');
+  const area = `${pl},${pt+ih} ${pts} ${pl+iw},${pt+ih}`;
+  // 시간 눈금
+  let ticks='';
+  for(let h=0;h<=24;h+=6){
+    const x=X(h*60);
+    ticks += `<line x1="${x}" y1="${pt}" x2="${x}" y2="${pt+ih}" stroke="#1c2740"/>`+
+             `<text x="${x}" y="${H-5}" fill="#6b7280" font-size="10" text-anchor="middle">${h}시</text>`;
+  }
+  // 만조/간조 마커 (time "HH:MM" → 분)
+  const marks = (day.extrema||[]).map(e=>{
+    const [hh,mm]=e.time.split(':').map(Number); const m=hh*60+mm;
+    const x=X(m), y=Y(e.level);
+    const col = e.type==='만조' ? 'var(--hi)' : 'var(--lo)';
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${col}"/>`+
+      `<text x="${x.toFixed(1)}" y="${(y-7).toFixed(1)}" fill="${col}" font-size="10" text-anchor="middle">${e.time}</text>`;
+  }).join('');
+  return `<svg class="curve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    ${ticks}
+    <polygon points="${area}" fill="rgba(74,163,255,.10)"/>
+    <polyline points="${pts}" fill="none" stroke="var(--hi)" stroke-width="2"/>
+    ${marks}
+  </svg>`;
+}
+
+function dayCard(day){
+  if(day.error){
+    return `<div class="card"><div class="top"><span class="date">${day.date}</span>
+      <span class="wd">(${day.weekday})</span></div>
+      <div class="err">조회 실패: ${day.error}</div></div>`;
+  }
+  const [bc,bt] = badgeInfo(day);
+  const mul = day.mulddae ? `${day.mulddae.name} · 음력 ${day.mulddae.lunar}` : '물때 정보 없음';
+  const chips = (day.extrema||[]).map(e=>{
+    const cls = e.type==='만조' ? 'hi' : 'lo';
+    return `<div class="chip ${cls}"><div class="t">${e.time}</div>
+      <div class="k">${e.type}</div><div class="v">${e.level}cm</div></div>`;
+  }).join('');
+  const adv = day.advice||{};
+  const advLines = (adv.lines||[]).map(l=>{
+    const w = l.startsWith('⚠') ? ' class="warn"' : '';
+    return `<div${w}>${l}</div>`;
+  }).join('');
+  const tags = (adv.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('');
+  return `<div class="card">
+    <div class="top"><span class="date">${day.date}</span>
+      <span class="wd">(${day.weekday})</span>
+      <span class="badge ${bc}">${day.mulddae?day.mulddae.name:bt}</span></div>
+    <div class="range">${mul} · 최대 조차 ${day.range_cm}cm (${day.range_label})</div>
+    ${curveSVG(day)}
+    <div class="tides">${chips||'<span class="range">만조/간조 정보 없음</span>'}</div>
+    <div class="advice">${advLines}<div class="tags">${tags}</div></div>
+  </div>`;
+}
+
+async function query(){
+  const station = $('#station').value.trim();
+  const date = $('#date').value || todayISO();
+  const days = $('#days').value;
+  if(!station){ $('#note').textContent='지점을 입력하세요.'; return; }
+  $('#note').textContent='조회 중...'; $('#result').innerHTML='';
+  try{ localStorage.setItem('tide_station', station); localStorage.setItem('tide_days', days); }catch(e){}
+  try{
+    const r = await fetch(`/api/tide?station=${encodeURIComponent(station)}&date=${date}&days=${days}`);
+    const data = await r.json();
+    if(data.error){ $('#note').innerHTML=`<span class="err">${data.error}</span>`; return; }
+    $('#note').textContent = `${data.station.name} · ${data.days.length}일`;
+    $('#result').innerHTML = data.days.map(dayCard).join('');
+  }catch(e){ $('#note').innerHTML = `<span class="err">요청 실패: ${e}</span>`; }
+}
+
+// 지도
+function initMap(){
+  if(mapReady) return;
+  const geo = STATIONS.filter(s=>s.lat!=null && s.lon!=null);
+  if(geo.length===0){
+    $('#mapHint').style.display='block';
+    $('#mapHint').innerHTML='지도를 쓰려면 지점 좌표가 필요합니다. 먼저 <code>python scripts\\build_geo.py</code> 를 한 번 실행하세요.';
+    return;
+  }
+  $('#map').style.display='block';
+  map = L.map('map').setView([36.4, 127.9], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:18, attribution:'© OpenStreetMap'}).addTo(map);
+  geo.forEach(s=>{
+    const mk = L.marker([s.lat, s.lon]).addTo(map);
+    mk.bindPopup(`<b>${s.name}</b><br><button onclick="pickStation('${s.name}')">이 지점 조회</button>`);
+  });
+  mapReady = true;
+  setTimeout(()=>map.invalidateSize(), 100);
+}
+window.pickStation = function(name){
+  $('#station').value = name;
+  if(map) map.closePopup();
+  query();
+  $('#result').scrollIntoView({behavior:'smooth'});
+};
+
+$('#mapBtn').addEventListener('click', ()=>{
+  const m = $('#map');
+  if(!mapReady){ initMap(); return; }
+  m.style.display = (m.style.display==='none') ? 'block' : 'none';
+  if(m.style.display==='block' && map) setTimeout(()=>map.invalidateSize(),50);
+});
+
+// 초기화
+$('#date').value = todayISO();
+try{
+  const s = localStorage.getItem('tide_station'); if(s) $('#station').value = s;
+  const d = localStorage.getItem('tide_days'); if(d) $('#days').value = d;
+}catch(e){}
+$('#go').addEventListener('click', query);
+$('#station').addEventListener('keydown', e=>{ if(e.key==='Enter') query(); });
+loadStations();
+</script>
+</body>
+</html>

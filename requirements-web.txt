@@ -1,0 +1,4 @@
+# 물때 홈페이지 배포용 의존성 (LLM용 torch 등은 불필요)
+flask>=3.0
+gunicorn>=21.2
+korean_lunar_calendar>=0.3

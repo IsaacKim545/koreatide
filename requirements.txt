@@ -1,0 +1,10 @@
+torch>=2.2.0
+numpy>=1.24
+tokenizers>=0.15.0
+tqdm>=4.65
+# 선택: 로깅/모니터링 (--wandb-project 사용 시)
+# wandb>=0.16
+# 선택: 물때(음력) 계산용 (scripts/tide.py, web)
+# korean_lunar_calendar>=0.3
+# 선택: 물때 홈페이지 (web/app.py)
+# flask>=3.0

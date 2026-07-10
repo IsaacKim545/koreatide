@@ -1,0 +1,41 @@
+{
+  "model": {
+    "vocab_size": 32000,
+    "max_seq_len": 4096,
+    "dim": 4096,
+    "n_layers": 48,
+    "n_heads": 32,
+    "n_kv_heads": 8,
+    "intermediate_size": 14336,
+    "norm_eps": 1e-05,
+    "rope_theta": 500000.0,
+    "dropout": 0.0,
+    "tie_embeddings": false,
+    "initializer_range": 0.02
+  },
+  "train": {
+    "seq_len": 4096,
+    "micro_batch_size": 1,
+    "grad_accum_steps": 8,
+    "max_steps": 100000,
+    "lr": 3e-04,
+    "min_lr": 3e-05,
+    "weight_decay": 0.1,
+    "beta1": 0.9,
+    "beta2": 0.95,
+    "grad_clip": 1.0,
+    "warmup_steps": 2000,
+    "lr_decay_steps": 100000,
+    "dtype": "bfloat16",
+    "activation_checkpointing": true,
+    "compile": true,
+    "fsdp_sharding": "full",
+    "cpu_offload": false,
+    "out_dir": "runs/10b",
+    "save_every": 2000,
+    "eval_every": 2000,
+    "eval_iters": 100,
+    "log_every": 10,
+    "seed": 1337
+  }
+}
