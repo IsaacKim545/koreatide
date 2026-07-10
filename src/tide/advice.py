@@ -50,7 +50,6 @@ def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> di
     if low_times:
         wide = "넓게 " if is_spring else ""
         lines.append(f"갯벌 체험: 간조 {', '.join(low_times)} 무렵 갯벌이 {wide}드러납니다.")
-        tags.append("갯벌")
 
     # 낚시 물돌이 (만조·간조 전후 1~2시간 입질 활발)
     windows = []
@@ -62,7 +61,6 @@ def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> di
     if windows:
         lines.append("낚시: 물때가 바뀌는 " + ", ".join(windows[:4]) +
                      " 무렵 입질이 활발한 편입니다.")
-        tags.append("낚시")
 
     # 안전
     if is_spring:
