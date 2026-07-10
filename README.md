@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 10B LLM — 학습 코드베이스
 
 10B 파라미터 규모의 decoder-only 트랜스포머(Llama 계열)를 밑바닥부터 사전학습하기 위한 PyTorch 코드베이스입니다.
@@ -237,3 +238,6 @@ torchrun --nproc_per_node=8 scripts/train.py \
 - 참고: 64×H100로 200B 토큰 학습 시 수 일~수 주 규모. 실제 비용/시간은 처리량에 크게 의존합니다.
 
 자세한 하이퍼파라미터는 `configs/10b.json` 및 각 소스 파일의 docstring 참고.
+=======
+# koreatide
+>>>>>>> 591e452df0b5ad7e0ff96f53e7f45901a84cda51

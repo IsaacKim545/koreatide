@@ -95,7 +95,9 @@ def api_tide():
                         "config/khoa_key.txt 에 키를 저장하거나 KHOA_API_KEY 를 설정하세요.",
                         "sample": True}), 403
     try:
-        wk = week_report(client, code, start, days=days, offset=offset, sample=sample)
+        # 여러 날 조회는 자정경계 보정을 꺼 API 호출 수를 줄임(속도↑). 하루 조회만 정밀.
+        wk = week_report(client, code, start, days=days, offset=offset,
+                         sample=sample, margin=(days == 1))
     except Exception as e:  # noqa
         return jsonify({"error": str(e)}), 500
     wk["sample"] = sample

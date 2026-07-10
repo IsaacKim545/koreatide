@@ -35,9 +35,9 @@ def _downsample(series, max_points: int = 48):
 
 def day_report(client: KhoaTideClient, code: str, d: date,
                offset: int = 0, sample: bool = False,
-               include_series: bool = True) -> dict:
-    """하루치 구조화 리포트."""
-    day = client.get_day(code, d.strftime("%Y%m%d"), sample=sample)
+               include_series: bool = True, margin: bool = True) -> dict:
+    """하루치 구조화 리포트. margin=False면 자정경계 보정을 꺼 API 호출을 줄입니다."""
+    day = client.get_day(code, d.strftime("%Y%m%d"), sample=sample, margin=margin)
     meta = day["meta"]
     ex = day["extrema"]
     highs = [e for e in ex if e["type"] == "고조"]
@@ -70,14 +70,14 @@ def day_report(client: KhoaTideClient, code: str, d: date,
 
 
 def week_report(client: KhoaTideClient, code: str, start: date, days: int = 7,
-                offset: int = 0, sample: bool = False) -> dict:
+                offset: int = 0, sample: bool = False, margin: bool = True) -> dict:
     """start부터 days일치 리포트 묶음."""
     name = None
     reports = []
     for i in range(days):
         d = start + timedelta(days=i)
         try:
-            rep = day_report(client, code, d, offset=offset, sample=sample)
+            rep = day_report(client, code, d, offset=offset, sample=sample, margin=margin)
             reports.append(rep)
         except Exception as e:  # noqa
             reports.append({"date": d.isoformat(), "weekday": _WD[d.weekday()],

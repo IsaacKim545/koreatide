@@ -7,7 +7,7 @@ services:
     plan: free
     region: singapore            # 한국과 가까운 리전
     buildCommand: "pip install -r requirements-web.txt"
-    startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60"
+    startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120"
     envVars:
       - key: KHOA_API_KEY        # 값은 대시보드에서 직접 입력(커밋 금지)
         sync: false
