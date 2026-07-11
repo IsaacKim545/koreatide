@@ -4,16 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>우리 물때 — 대한민국 만조·간조·물때</title>
+<meta name="description" content="국립해양조사원 공식 예측 기반 전국 조위관측소 만조·간조·물때·조차. 갯벌·낚시·여행 물때 안내.">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% if ga_id %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_id }}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '{{ ga_id }}');
+</script>
+{% endif %}
 <style>
   :root{
     --bg:#0b1220; --card:#131c2e; --line:#233047; --fg:#e8edf6; --mut:#8b98b0;
-    --hi:#4aa3ff; --lo:#f0a020; --spring:#ff5a76; --neap:#3ec7c2; --mid:#8b98b0;
+    --hi:#4aa3ff; --lo:#f0a020; --spring:#ff5a76; --neap:#3ec7c2; --mid:#8b98b0; --star:#ffd35a;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
        font-family:system-ui,'Segoe UI','Malgun Gothic',sans-serif;line-height:1.5}
-  header{padding:22px 18px 10px;text-align:center}
+  header{padding:22px 18px 8px;text-align:center}
   header h1{margin:0;font-size:22px;letter-spacing:-.3px}
   header .sub{color:var(--mut);font-size:13px;margin-top:4px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
@@ -24,8 +34,19 @@
     border-radius:9px;padding:9px 11px;font-size:15px}
   .controls button{cursor:pointer}
   .controls #go{background:var(--hi);border-color:var(--hi);color:#04101f;font-weight:700}
+  .controls #star.on{color:var(--star);border-color:var(--star)}
   .controls button:active{transform:translateY(1px)}
   #wrap{max-width:760px;margin:0 auto;padding:16px}
+  #favbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}
+  .fav{display:inline-flex;align-items:center;gap:6px;background:var(--card);
+       border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:13px;cursor:pointer}
+  .fav .x{color:var(--mut);font-weight:700}
+  details.guide{background:var(--card);border:1px solid var(--line);border-radius:12px;
+                padding:8px 14px;margin:8px 0 12px}
+  details.guide summary{cursor:pointer;font-weight:700;font-size:15px}
+  details.guide .g{font-size:14px;color:#cfd6e6;margin-top:8px}
+  details.guide h4{margin:12px 0 4px;font-size:14px;color:var(--hi)}
+  details.guide ul{margin:4px 0;padding-left:18px} details.guide li{margin:3px 0}
   #map{height:340px;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px;display:none}
   .maphint{color:var(--mut);font-size:13px;text-align:center;padding:8px}
   .note{color:var(--mut);font-size:13px;text-align:center;padding:8px}
@@ -40,7 +61,7 @@
   .b-neap{background:rgba(62,199,194,.16);color:var(--neap)}
   .b-mid{background:rgba(139,152,176,.16);color:var(--mid)}
   .range{color:var(--mut);font-size:13px;margin:4px 0}
-  svg.curve{width:100%;height:120px;display:block;margin:6px 0}
+  svg.curve{width:100%;height:140px;display:block;margin:6px 0}
   .tides{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
   .chip{display:flex;flex-direction:column;align-items:center;min-width:74px;
         border:1px solid var(--line);border-radius:10px;padding:6px 9px}
@@ -67,6 +88,7 @@
 <div class="controls">
   <input id="station" list="stationList" placeholder="지점 (예: 인천)" autocomplete="off">
   <datalist id="stationList"></datalist>
+  <button id="star" title="즐겨찾기">☆</button>
   <input id="date" type="date">
   <select id="days">
     <option value="1">하루</option>
@@ -79,9 +101,30 @@
 </div>
 
 <div id="wrap">
+  <div id="favbar"></div>
+
+  <details class="guide">
+    <summary>🧭 여행자 가이드 — 물때 처음이세요?</summary>
+    <div class="g">
+      <p><b>만조</b>는 물이 가장 많이 차오른 때, <b>간조</b>는 가장 많이 빠진 때예요.
+      <b>조차</b>는 그 높이 차이고, <b>사리</b>(조차 큼)·<b>조금</b>(조차 작음)이 물때입니다.
+      그래프의 <b>낮은 골(간조)</b>이 물이 빠져 갯벌이 드러나는 시간입니다.</p>
+      <h4>🐚 갯벌 체험·조개잡이</h4>
+      <ul><li>간조 <b>1~2시간 전후</b>가 좋아요. <b>사리</b> 무렵일수록 갯벌이 넓게 드러납니다.</li>
+      <li>들어갈 땐 <b>다음 만조 시각</b>을 꼭 확인하세요.</li></ul>
+      <h4>🏖️ 해수욕·물놀이</h4>
+      <ul><li>만조 전후엔 물이 깊습니다. 밀물이 빠르게 들어오니 갯골·모래톱 고립에 주의.</li></ul>
+      <h4>🎣 낚시·🦑 해루질</h4>
+      <ul><li>물이 들고 나는 <b>물돌이(만조·간조 전후)</b>에 입질이 좋습니다.</li>
+      <li>해루질(밤 채집)은 <b>사리 간조 밤</b>이 적기예요.</li></ul>
+      <h4>⚠️ 안전</h4>
+      <ul><li>밀물은 생각보다 빠릅니다. 사리 때 갯골 물살이 세니 물때표를 꼭 확인하세요.</li></ul>
+    </div>
+  </details>
+
   <div id="map"></div>
   <div class="maphint" id="mapHint" style="display:none"></div>
-  <div class="note" id="note">지점과 날짜를 고르고 '조회'를 누르세요. (지도 버튼으로 위치 선택 가능)</div>
+  <div class="note" id="note">지점과 날짜를 고르고 '조회'를 누르세요. (⭐ 즐겨찾기 · 🗺 지도)</div>
   <div id="result"></div>
 </div>
 
@@ -93,6 +136,35 @@ const $ = s => document.querySelector(s);
 const todayISO = () => new Date().toLocaleDateString('sv-SE');
 let STATIONS = [];
 let map = null, mapReady = false;
+
+// ---- 즐겨찾기 (localStorage) ----
+function getFavs(){ try{ return JSON.parse(localStorage.getItem('tide_favs')||'[]'); }catch(e){ return []; } }
+function setFavs(a){ try{ localStorage.setItem('tide_favs', JSON.stringify(a)); }catch(e){} }
+function renderFavs(){
+  const favs = getFavs();
+  $('#favbar').innerHTML = favs.map(n=>
+    `<span class="fav" data-n="${n}">⭐ ${n} <span class="x" data-x="${n}">×</span></span>`).join('');
+  $('#favbar').querySelectorAll('.fav').forEach(el=>{
+    el.addEventListener('click', ev=>{
+      if(ev.target.dataset.x){ removeFav(ev.target.dataset.x); ev.stopPropagation(); return; }
+      $('#station').value = el.dataset.n; query();
+    });
+  });
+  updateStar();
+}
+function toggleFav(){
+  const n = $('#station').value.trim(); if(!n) return;
+  let favs = getFavs();
+  if(favs.includes(n)) favs = favs.filter(x=>x!==n); else favs.push(n);
+  setFavs(favs); renderFavs();
+}
+function removeFav(n){ setFavs(getFavs().filter(x=>x!==n)); renderFavs(); }
+function updateStar(){
+  const n = $('#station').value.trim();
+  const on = getFavs().includes(n);
+  $('#star').textContent = on ? '★' : '☆';
+  $('#star').classList.toggle('on', on);
+}
 
 async function loadStations(){
   try{
@@ -108,27 +180,29 @@ function badgeInfo(day){
   return ['b-mid','중간'];
 }
 
-// 조위 곡선 SVG
+// ---- 조위 곡선 SVG (개선판) ----
 function curveSVG(day){
   const s = day.series||[];
   if(s.length < 3) return '';
-  const W=680,H=120,pl=6,pr=6,pt=16,pb=18, iw=W-pl-pr, ih=H-pt-pb;
+  const W=680,H=140,pl=8,pr=42,pt=18,pb=20, iw=W-pl-pr, ih=H-pt-pb;
   const levels=s.map(p=>p.level);
   let mn=Math.min(...levels), mx=Math.max(...levels);
   if(mx-mn<10){mx+=10;mn-=10;}
-  const pad=(mx-mn)*0.12; mn-=pad; mx+=pad;
+  const pad=(mx-mn)*0.12, lo0=mn-pad, hi0=mx+pad;
   const X=m=>pl + (m/1440)*iw;
-  const Y=l=>pt + (1-(l-mn)/(mx-mn))*ih;
+  const Y=l=>pt + (1-(l-lo0)/(hi0-lo0))*ih;
   const pts = s.map(p=>`${X(p.min).toFixed(1)},${Y(p.level).toFixed(1)}`).join(' ');
   const area = `${pl},${pt+ih} ${pts} ${pl+iw},${pt+ih}`;
-  // 시간 눈금
   let ticks='';
   for(let h=0;h<=24;h+=6){
     const x=X(h*60);
     ticks += `<line x1="${x}" y1="${pt}" x2="${x}" y2="${pt+ih}" stroke="#1c2740"/>`+
              `<text x="${x}" y="${H-5}" fill="#6b7280" font-size="10" text-anchor="middle">${h}시</text>`;
   }
-  // 만조/간조 마커 (time "HH:MM" → 분)
+  // y축 최고/최저 cm 라벨(오른쪽)
+  const yLabels = `<text x="${pl+iw+4}" y="${Y(mx)+4}" fill="#6b7280" font-size="10">${mx}cm</text>`+
+                  `<text x="${pl+iw+4}" y="${Y(mn)+4}" fill="#6b7280" font-size="10">${mn}cm</text>`;
+  // 만조/간조 마커
   const marks = (day.extrema||[]).map(e=>{
     const [hh,mm]=e.time.split(':').map(Number); const m=hh*60+mm;
     const x=X(m), y=Y(e.level);
@@ -136,11 +210,27 @@ function curveSVG(day){
     return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${col}"/>`+
       `<text x="${x.toFixed(1)}" y="${(y-7).toFixed(1)}" fill="${col}" font-size="10" text-anchor="middle">${e.time}</text>`;
   }).join('');
+  // 오늘이면 '지금' 세로선 + 현재 수위 점
+  let nowMark='';
+  if(day.date === todayISO()){
+    const now = new Date(); const nm = now.getHours()*60+now.getMinutes();
+    // 현재 수위: 가장 가까운 시계열 점
+    let best=s[0]; for(const p of s){ if(Math.abs(p.min-nm)<Math.abs(best.min-nm)) best=p; }
+    const nx=X(nm);
+    nowMark = `<line x1="${nx}" y1="${pt}" x2="${nx}" y2="${pt+ih}" stroke="#ff5a76" stroke-dasharray="3 3"/>`+
+      `<circle cx="${nx}" cy="${Y(best.level)}" r="4" fill="#ff5a76"/>`+
+      `<text x="${nx}" y="${pt-5}" fill="#ff5a76" font-size="10" text-anchor="middle">지금 ${best.level}cm</text>`;
+  }
+  const gid = 'g'+Math.random().toString(36).slice(2,7);
   return `<svg class="curve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    ${ticks}
-    <polygon points="${area}" fill="rgba(74,163,255,.10)"/>
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(74,163,255,.35)"/>
+      <stop offset="100%" stop-color="rgba(74,163,255,.02)"/>
+    </linearGradient></defs>
+    ${ticks}${yLabels}
+    <polygon points="${area}" fill="url(#${gid})"/>
     <polyline points="${pts}" fill="none" stroke="var(--hi)" stroke-width="2"/>
-    ${marks}
+    ${marks}${nowMark}
   </svg>`;
 }
 
@@ -179,8 +269,10 @@ async function query(){
   const date = $('#date').value || todayISO();
   const days = $('#days').value;
   if(!station){ $('#note').textContent='지점을 입력하세요.'; return; }
+  updateStar();
   $('#note').textContent='조회 중...'; $('#result').innerHTML='';
   try{ localStorage.setItem('tide_station', station); localStorage.setItem('tide_days', days); }catch(e){}
+  if(window.gtag) gtag('event','query_tide',{station:station, days:days});
   try{
     const r = await fetch(`/api/tide?station=${encodeURIComponent(station)}&date=${date}&days=${days}`);
     const data = await r.json();
@@ -190,7 +282,7 @@ async function query(){
   }catch(e){ $('#note').innerHTML = `<span class="err">요청 실패: ${e}</span>`; }
 }
 
-// 지도
+// ---- 지도 ----
 function initMap(){
   if(mapReady) return;
   const geo = STATIONS.filter(s=>s.lat!=null && s.lon!=null);
@@ -224,14 +316,17 @@ $('#mapBtn').addEventListener('click', ()=>{
   if(m.style.display==='block' && map) setTimeout(()=>map.invalidateSize(),50);
 });
 
-// 초기화
+// ---- 초기화 ----
 $('#date').value = todayISO();
 try{
   const s = localStorage.getItem('tide_station'); if(s) $('#station').value = s;
   const d = localStorage.getItem('tide_days'); if(d) $('#days').value = d;
 }catch(e){}
 $('#go').addEventListener('click', query);
+$('#star').addEventListener('click', toggleFav);
+$('#station').addEventListener('input', updateStar);
 $('#station').addEventListener('keydown', e=>{ if(e.key==='Enter') query(); });
+renderFavs();
 loadStations();
 </script>
 </body>

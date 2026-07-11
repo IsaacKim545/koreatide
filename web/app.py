@@ -37,7 +37,9 @@ def _client():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # 구글 애널리틱스 측정 ID(G-XXXX)를 환경변수로 주입(없으면 미삽입)
+    ga_id = os.environ.get("GA_MEASUREMENT_ID", "")
+    return render_template("index.html", ga_id=ga_id)
 
 
 def _load_geo():

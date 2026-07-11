@@ -49,6 +49,13 @@ Render 서비스 → **Environment** → **Add Environment Variable**:
 
 저장하면 앱이 이 값을 자동으로 사용합니다(코드의 keyconf가 환경변수를 우선 사용).
 
+**(선택) 구글 애널리틱스**: GA4 측정 ID가 있으면 환경변수 하나 더 추가하세요.
+- Key: `GA_MEASUREMENT_ID`
+- Value: `G-XXXXXXXXXX` (GA4 속성 → 데이터 스트림에서 확인)
+
+설정하면 페이지에 gtag가 자동 삽입되고, '조회' 시 `query_tide` 이벤트도 전송됩니다.
+(설정 안 하면 애널리틱스 코드는 삽입되지 않습니다.)
+
 ## 5) 배포 & 임시주소 확인
 
 **Deploy** 후 몇 분 기다리면 `https://koreatide.onrender.com` 같은 임시 주소가 생깁니다.
