@@ -44,6 +44,10 @@
   details.guide{background:var(--card);border:1px solid var(--line);border-radius:12px;
                 padding:8px 14px;margin:8px 0 12px}
   details.guide summary{cursor:pointer;font-weight:700;font-size:15px}
+  #guideX{float:right;color:var(--mut);font-weight:700;cursor:pointer;padding:0 4px;font-size:15px}
+  #guideX:hover{color:#ffb4bf}
+  #guideRestore a{color:var(--mut);font-size:13px;text-decoration:none}
+  #guideRestore a:hover{color:var(--fg)}
   details.guide .g{font-size:14px;color:#cfd6e6;margin-top:8px}
   details.guide h4{margin:12px 0 4px;font-size:14px;color:var(--hi)}
   details.guide ul{margin:4px 0;padding-left:18px} details.guide li{margin:3px 0}
@@ -103,8 +107,8 @@
 <div id="wrap">
   <div id="favbar"></div>
 
-  <details class="guide">
-    <summary>🧭 여행자 가이드 — 물때 처음이세요?</summary>
+  <details class="guide" id="guide">
+    <summary>🧭 여행자 가이드 — 물때 처음이세요?<span id="guideX" title="가이드 숨기기">✕</span></summary>
     <div class="g">
       <p><b>만조</b>는 물이 가장 많이 차오른 때, <b>간조</b>는 가장 많이 빠진 때예요.
       <b>조차</b>는 그 높이 차이고, <b>사리</b>(조차 큼)·<b>조금</b>(조차 작음)이 물때입니다.
@@ -121,6 +125,9 @@
       <ul><li>밀물은 생각보다 빠릅니다. 사리 때 갯골 물살이 세니 물때표를 꼭 확인하세요.</li></ul>
     </div>
   </details>
+  <div id="guideRestore" style="display:none;text-align:center;margin:0 0 12px">
+    <a href="#" id="guideShow">🧭 여행자 가이드 다시 보기</a>
+  </div>
 
   <div id="map"></div>
   <div class="maphint" id="mapHint" style="display:none"></div>
@@ -322,6 +329,22 @@ try{
   const s = localStorage.getItem('tide_station'); if(s) $('#station').value = s;
   const d = localStorage.getItem('tide_days'); if(d) $('#days').value = d;
 }catch(e){}
+// ---- 여행자 가이드 숨기기/복원 (브라우저에 기억) ----
+function hideGuide(save){
+  $('#guide').style.display='none'; $('#guideRestore').style.display='block';
+  if(save){ try{ localStorage.setItem('tide_guide_hidden','1'); }catch(e){} }
+}
+function showGuide(){
+  $('#guide').style.display='block'; $('#guideRestore').style.display='none';
+  try{ localStorage.removeItem('tide_guide_hidden'); }catch(e){}
+}
+$('#guideX').addEventListener('click', e=>{
+  e.preventDefault(); e.stopPropagation();   // details 토글 방지
+  if(confirm("가이드를 숨기시겠어요?\n상단 '가이드 다시 보기'로 언제든 다시 볼 수 있어요.")) hideGuide(true);
+});
+$('#guideShow').addEventListener('click', e=>{ e.preventDefault(); showGuide(); });
+try{ if(localStorage.getItem('tide_guide_hidden')==='1') hideGuide(false); }catch(e){}
+
 $('#go').addEventListener('click', query);
 $('#star').addEventListener('click', toggleFav);
 $('#station').addEventListener('input', updateStar);
