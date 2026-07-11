@@ -20,7 +20,7 @@ from datetime import date as _date, datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Flask, jsonify, request, render_template  # noqa: E402
+from flask import Flask, jsonify, request, render_template, redirect  # noqa: E402
 
 from src.tide.stations import load_stations, find_station  # noqa: E402
 from src.tide.khoa import KhoaTideClient  # noqa: E402
@@ -30,11 +30,21 @@ from src.tide.keyconf import load_service_key, get_api_url  # noqa: E402
 app = Flask(__name__)
 
 
+@app.before_request
+def _force_https():
+    # Render 등 프록시 뒤에서는 원래 접속 프로토콜이 X-Forwarded-Proto 헤더에 담김.
+    # http로 들어오면 동일 URL의 https로 301 이동 (없으면 https로 간주 → 로컬은 영향 없음).
+    if request.headers.get("X-Forwarded-Proto", "https") == "http":
+        return redirect(request.url.replace("http://", "https://", 1), code=301)
+
+
 @app.after_request
 def _no_cache(resp):
     # HTML/JSON을 브라우저가 오래 캐시하지 않도록 → 재배포 시 즉시 반영
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
+    # 브라우저가 이후 이 도메인을 항상 HTTPS로 접속하도록(1년). HTTP 접속 자체를 없앰.
+    resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return resp
 
 
@@ -61,6 +71,26 @@ def _load_geo():
         except Exception:  # noqa
             return {}
     return {}
+
+
+@app.route("/robots.txt")
+def robots():
+    body = ("User-agent: *\n"
+            "Allow: /\n"
+            "Sitemap: https://koreatide.com/sitemap.xml\n")
+    return app.response_class(body, mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    today = _date.today().isoformat()
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           '  <url><loc>https://koreatide.com/</loc>'
+           f'<lastmod>{today}</lastmod><changefreq>daily</changefreq>'
+           '<priority>1.0</priority></url>\n'
+           '</urlset>\n')
+    return app.response_class(xml, mimetype="application/xml")
 
 
 @app.route("/api/stations")
