@@ -55,9 +55,11 @@ def _client():
 
 @app.route("/")
 def index():
-    # 구글 애널리틱스 측정 ID(G-XXXX)를 환경변수로 주입(없으면 미삽입)
+    # 구글 애널리틱스 측정 ID / 네이버 사이트 인증 코드를 환경변수로 주입(없으면 미삽입)
     ga_id = os.environ.get("GA_MEASUREMENT_ID", "")
-    return render_template("index.html", ga_id=ga_id)
+    naver_verification = os.environ.get("NAVER_SITE_VERIFICATION", "")
+    return render_template("index.html", ga_id=ga_id,
+                           naver_verification=naver_verification)
 
 
 def _load_geo():
