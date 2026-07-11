@@ -30,6 +30,14 @@ from src.tide.keyconf import load_service_key, get_api_url  # noqa: E402
 app = Flask(__name__)
 
 
+@app.after_request
+def _no_cache(resp):
+    # HTML/JSON을 브라우저가 오래 캐시하지 않도록 → 재배포 시 즉시 반영
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
+
+
 def _client():
     key = load_service_key()
     return KhoaTideClient(service_key=key, base_url=get_api_url()), (not key)
