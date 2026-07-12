@@ -11,6 +11,7 @@ from .khoa import KhoaTideClient
 from .mulddae import get_mulddae, range_phase
 from .advice import make_advice
 from .stations import station_name
+from .sun import sun_report
 
 _WD = ["월", "화", "수", "목", "금", "토", "일"]
 _HL_KO = {"고조": "만조", "저조": "간조"}
@@ -63,6 +64,7 @@ def day_report(client: KhoaTideClient, code: str, d: date,
         "range_cm": round(range_cm),
         "range_label": range_phase(range_cm),
         "advice": advice,
+        "sun": sun_report(meta.get("lat"), meta.get("lot"), d),
     }
     if include_series:
         out["series"] = _downsample(day.get("series", []))

@@ -75,6 +75,11 @@ def _load_geo():
     return {}
 
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
 @app.route("/robots.txt")
 def robots():
     body = ("User-agent: *\n"
@@ -91,6 +96,8 @@ def sitemap():
            '  <url><loc>https://koreatide.com/</loc>'
            f'<lastmod>{today}</lastmod><changefreq>daily</changefreq>'
            '<priority>1.0</priority></url>\n'
+           '  <url><loc>https://koreatide.com/privacy</loc>'
+           '<changefreq>yearly</changefreq><priority>0.3</priority></url>\n'
            '</urlset>\n')
     return app.response_class(xml, mimetype="application/xml")
 
