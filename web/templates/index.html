@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>우리 물때 — 대한민국 만조·간조·물때</title>
 <meta name="description" content="국립해양조사원 공식 예측 기반 전국 조위관측소 만조·간조·물때·조차. 갯벌·낚시·여행 물때 안내.">
+<meta name="theme-color" content="#0b1220">
 <link rel="canonical" href="https://koreatide.com/">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/og.png">
@@ -39,11 +40,12 @@
     --hi:#4aa3ff; --lo:#f0a020; --spring:#ff5a76; --neap:#3ec7c2; --mid:#8b98b0; --star:#ffd35a;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
+  body{margin:0;color:var(--fg);min-height:100vh;
+       background:radial-gradient(1200px 420px at 50% -120px, #17294a 0%, var(--bg) 62%) no-repeat, var(--bg);
        font-family:system-ui,'Segoe UI','Malgun Gothic',sans-serif;line-height:1.5}
-  header{padding:22px 18px 8px;text-align:center}
-  header h1{margin:0;font-size:22px;letter-spacing:-.3px}
-  header .sub{color:var(--mut);font-size:13px;margin-top:4px}
+  header{padding:26px 18px 8px;text-align:center}
+  header h1{margin:0;font-size:24px;letter-spacing:-.4px;font-weight:800}
+  header .sub{color:var(--mut);font-size:13px;margin-top:5px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
             padding:12px 16px;position:sticky;top:0;background:var(--bg);z-index:600;
             border-bottom:1px solid var(--line)}
@@ -74,7 +76,9 @@
   .note{color:var(--mut);font-size:13px;text-align:center;padding:8px}
   .err{color:#ffb4bf;text-align:center;padding:14px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
-        padding:14px 16px;margin:12px 0}
+        padding:14px 16px;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.28);
+        transition:transform .12s ease,border-color .12s ease}
+  .card:hover{transform:translateY(-1px);border-color:#2c3a55}
   .card .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .date{font-size:17px;font-weight:700}
   .wd{color:var(--mut);font-size:14px}
@@ -99,6 +103,15 @@
        padding:2px 8px;font-size:12px;margin:2px 4px 0 0}
   footer{color:var(--mut);font-size:12px;text-align:center;padding:20px}
   .leaflet-popup-content{margin:8px 10px;font-size:14px}
+  /* 모바일 최적화 */
+  @media(max-width:540px){
+    header h1{font-size:21px}
+    .controls{padding:10px 10px;gap:6px}
+    #station{flex:1 1 60%}
+    .controls input,.controls select,.controls button{padding:11px 12px;font-size:16px}
+    #wrap{padding:12px}
+    svg.curve{height:150px}
+  }
 </style>
 </head>
 <body>
