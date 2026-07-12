@@ -82,10 +82,25 @@ def privacy():
 
 @app.route("/robots.txt")
 def robots():
-    body = ("User-agent: *\n"
-            "Allow: /\n"
-            "Sitemap: https://koreatide.com/sitemap.xml\n")
-    return app.response_class(body, mimetype="text/plain")
+    # 절충안: 일반 검색봇 + AI '검색/답변' 봇은 허용(방문 유입), AI '학습' 봇은 차단.
+    lines = ["# 기본: 모든 크롤러 허용", "User-agent: *", "Allow: /", ""]
+
+    # AI 검색·답변 봇: 인용·링크로 방문을 보내므로 명시 허용
+    allow_ai = ["Google-Extended", "OAI-SearchBot", "ChatGPT-User",
+                "PerplexityBot", "Perplexity-User"]
+    lines.append("# AI 검색·답변 봇: 허용(인용·링크로 방문 유입)")
+    for bot in allow_ai:
+        lines += [f"User-agent: {bot}", "Allow: /", ""]
+
+    # AI 학습(대량 스크래핑) 봇: 콘텐츠 학습 이용 거부
+    block_ai = ["GPTBot", "CCBot", "ClaudeBot", "anthropic-ai",
+                "Bytespider", "Applebot-Extended"]
+    lines.append("# AI 학습 봇: 차단(콘텐츠 학습 이용 거부)")
+    for bot in block_ai:
+        lines += [f"User-agent: {bot}", "Disallow: /", ""]
+
+    lines += ["Sitemap: https://koreatide.com/sitemap.xml", ""]
+    return app.response_class("\n".join(lines), mimetype="text/plain")
 
 
 @app.route("/sitemap.xml")
