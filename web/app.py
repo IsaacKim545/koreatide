@@ -15,6 +15,7 @@ API:
 """
 import json
 import os
+import re
 import sys
 from datetime import date as _date, datetime
 
@@ -55,11 +56,14 @@ def _client():
 
 @app.route("/")
 def index():
-    # 구글 애널리틱스 측정 ID / 네이버 사이트 인증 코드를 환경변수로 주입(없으면 미삽입)
+    # 구글 애널리틱스 측정 ID / 네이버 사이트 인증 코드 / 애드센스 게시자 ID를
+    # 환경변수로 주입(없으면 미삽입).
     ga_id = os.environ.get("GA_MEASUREMENT_ID", "")
     naver_verification = os.environ.get("NAVER_SITE_VERIFICATION", "")
+    adsense_client = os.environ.get("ADSENSE_CLIENT", "")  # 예: ca-pub-1234567890123456
     return render_template("index.html", ga_id=ga_id,
-                           naver_verification=naver_verification)
+                           naver_verification=naver_verification,
+                           adsense_client=adsense_client)
 
 
 def _load_geo():
@@ -101,6 +105,18 @@ def robots():
 
     lines += ["Sitemap: https://koreatide.com/sitemap.xml", ""]
     return app.response_class("\n".join(lines), mimetype="text/plain")
+
+
+@app.route("/ads.txt")
+def ads_txt():
+    # 구글 애드센스 ads.txt. ADSENSE_CLIENT(ca-pub-XXXX)가 설정된 경우에만 게시.
+    # 형식: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+    client = os.environ.get("ADSENSE_CLIENT", "").strip()
+    pub = client.replace("ca-", "", 1) if client.startswith("ca-pub-") else client
+    if not pub.startswith("pub-"):
+        return app.response_class("", mimetype="text/plain", status=404)
+    line = f"google.com, {pub}, DIRECT, f08c47fec0942fa0\n"
+    return app.response_class(line, mimetype="text/plain")
 
 
 @app.route("/sitemap.xml")
@@ -166,6 +182,64 @@ def api_tide():
         return jsonify({"error": str(e)}), 500
     wk["sample"] = sample
     return jsonify(wk)
+
+
+# ── 이전 도메인 소유자(워드프레스 블로그)의 잔존 URL 처리 ────────────────────
+# 구글이 예전 색인 기록을 보고 계속 재크롤링하는 경로들.
+# 404("일시적으로 없음")보다 410 Gone("영구 삭제")을 주면 색인에서 더 빨리 빠짐.
+_LEGACY_PATTERNS = [
+    re.compile(p) for p in (
+        r"^/wp-(content|includes|admin|login|json|cron)\b",   # 워드프레스 내부 경로
+        r"^/xmlrpc\.php$",
+        r"^/(category|tag|author|archives)/",                 # 분류 아카이브
+        r"^/\d{4}/\d{2}(/|$)",                                # 날짜 아카이브 /2015/03/
+        r"(^|/)feed/?$",                                      # RSS
+        r"^/[a-z0-9]+(?:-[a-z0-9]+){3,}/?$",                  # 긴 영문 하이픈 슬러그
+    )
+]
+
+
+def _is_legacy_path(path: str) -> bool:
+    """이전 블로그 잔재로 보이는 경로인지 판정."""
+    if path.startswith(("/api/", "/static/")):
+        return False
+    return any(rx.search(path) for rx in _LEGACY_PATTERNS)
+
+
+@app.errorhandler(404)
+def _handle_missing(_e):
+    path = request.path
+
+    # API는 사람이 아니라 프로그램이 부르므로 JSON으로 응답
+    if path.startswith("/api/"):
+        return jsonify({"error": "not found"}), 404
+
+    if _is_legacy_path(path):
+        return render_template(
+            "error.html", code=410,
+            heading="삭제된 페이지입니다",
+            message="찾으시는 주소의 페이지는 영구적으로 삭제되었습니다.",
+            note="이 도메인은 현재 전국 만조·간조·물때 정보 서비스로 운영되고 있습니다."
+        ), 410
+
+    return render_template(
+        "error.html", code=404,
+        heading="페이지를 찾을 수 없습니다",
+        message="주소가 잘못되었거나 페이지가 이동되었을 수 있습니다.",
+        note=None
+    ), 404
+
+
+@app.errorhandler(500)
+def _handle_error(_e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "internal server error"}), 500
+    return render_template(
+        "error.html", code=500,
+        heading="일시적인 오류가 발생했습니다",
+        message="잠시 후 다시 시도해 주세요.",
+        note=None
+    ), 500
 
 
 def _lan_ip():

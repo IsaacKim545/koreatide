@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ code }} · 우리 물때</title>
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<style>
+  body{margin:0;background:#0b1220;color:#e8edf6;
+       font-family:system-ui,'Segoe UI','Malgun Gothic',sans-serif;line-height:1.7;
+       min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .wrap{max-width:560px;padding:32px 20px 56px;text-align:center}
+  a{color:#4aa3ff}
+  .code{font-size:64px;font-weight:700;letter-spacing:-2px;color:#1e3a5f;
+        line-height:1;margin-bottom:4px}
+  h1{font-size:21px;margin:0 0 10px}
+  p{font-size:15px;color:#d7deec;margin:0 0 8px}
+  .mut{color:#8b98b0;font-size:13px}
+  .wave{display:block;margin:18px auto 22px;width:100%;max-width:320px;height:auto}
+  .btn{display:inline-block;margin-top:18px;padding:11px 22px;border-radius:8px;
+       background:#1d64c4;color:#fff;text-decoration:none;font-size:15px;font-weight:600}
+  .btn:hover{background:#2575db}
+  .links{margin-top:22px;font-size:13px}
+  .links a{margin:0 8px;color:#8b98b0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="code">{{ code }}</div>
+
+  <svg class="wave" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M0,34 C40,14 60,54 100,34 C140,14 160,54 200,34 C240,14 260,54 320,30"
+          fill="none" stroke="#1d64c4" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+    <path d="M0,46 C40,28 60,64 100,46 C140,28 160,64 200,46 C240,28 260,64 320,42"
+          fill="none" stroke="#1d64c4" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+  </svg>
+
+  <h1>{{ heading }}</h1>
+  <p>{{ message }}</p>
+  {% if note %}<p class="mut">{{ note }}</p>{% endif %}
+
+  <a class="btn" href="/">물때 조회하러 가기</a>
+
+  <div class="links">
+    <a href="/">홈</a>·<a href="/privacy">개인정보처리방침</a>
+  </div>
+</div>
+</body>
+</html>
