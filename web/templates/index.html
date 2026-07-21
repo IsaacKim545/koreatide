@@ -77,6 +77,8 @@
   details.guide h4{margin:12px 0 4px;font-size:14px;color:var(--hi)}
   details.guide ul{margin:4px 0;padding-left:18px} details.guide li{margin:3px 0}
   #map{height:340px;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px;display:none}
+  /* 모바일은 세로 공간이 귀하다. 지도를 낮춰 결과가 덜 밀리게. */
+  @media(max-width:640px){ #map{height:240px} }
   .maphint{color:var(--mut);font-size:13px;text-align:center;padding:8px}
   .note{color:var(--mut);font-size:13px;text-align:center;padding:8px}
   .err{color:#ffb4bf;text-align:center;padding:14px}
@@ -179,6 +181,10 @@ const $ = s => document.querySelector(s);
 const todayISO = () => new Date().toLocaleDateString('sv-SE');
 let STATIONS = [];
 let map = null, mapReady = false;
+// null = 사용자가 아직 지도를 직접 여닫지 않음(자동 접힘 허용)
+// 'open'  = 직접 열어둠 → 조회해도 유지
+// 'closed'= 직접 닫음   → 자동으로 다시 열지 않음
+let mapUserChoice = null;
 
 // ---- 즐겨찾기 (localStorage) ----
 function getFavs(){ try{ return JSON.parse(localStorage.getItem('tide_favs')||'[]'); }catch(e){ return []; } }
@@ -214,6 +220,20 @@ async function loadStations(){
     const r = await fetch('/api/stations'); STATIONS = await r.json();
     $('#stationList').innerHTML = STATIONS.map(s => `<option value="${s.name}">`).join('');
   }catch(e){}
+  // 좌표를 받은 뒤에야 지도를 그릴 수 있다.
+  // 처음 온 방문자에게 지도를 펼쳐 보여준다 — '어청도'·'교본초' 같은 관측소명만으로는
+  // 자기 여행지와 가까운 지점을 고를 수 없기 때문. 조회하면 자동으로 접힌다.
+  openMapInitially();
+}
+
+function openMapInitially(){
+  // 사용자가 이전 방문에서 지도를 닫아뒀다면 그 선택을 유지
+  try{
+    if(localStorage.getItem('tide_map_closed')==='1'){ mapUserChoice='closed'; return; }
+  }catch(e){}
+  // 이미 조회 결과가 떠 있으면(즐겨찾기 자동조회 등) 결과를 가리지 않는다
+  if($('#result').innerHTML.trim()) return;
+  setMapOpen(true);
 }
 
 function badgeInfo(day){
@@ -334,6 +354,11 @@ async function query(){
     if(data.error){ $('#note').innerHTML=`<span class="err">${data.error}</span>`; return; }
     $('#note').textContent = `${data.station.name} · ${data.days.length}일`;
     $('#result').innerHTML = data.days.map(dayCard).join('');
+
+    // 결과가 나오면 지도를 접는다. 지도는 '지점을 찾는' 도구이고, 찾고 난 뒤엔
+    // 사용자가 보러 온 만조·간조를 340px 아래로 밀어낼 이유가 없다.
+    // 단, 사용자가 지도 버튼으로 직접 열어둔 경우는 그 선택을 존중한다.
+    if(mapUserChoice !== 'open' && mapIsOpen()) setMapOpen(false);
   }catch(e){ $('#note').innerHTML = `<span class="err">요청 실패: ${e}</span>`; }
 }
 
@@ -353,22 +378,43 @@ function initMap(){
   geo.forEach(s=>{
     const mk = L.marker([s.lat, s.lon]).addTo(map);
     mk.bindPopup(`<b>${s.name}</b><br><button onclick="pickStation('${s.name}')">이 지점 조회</button>`);
+    // 지도가 실제로 쓰이는지 측정 — 마커를 여는 것 자체가 관심 신호
+    mk.on('popupopen', ()=>{
+      if(window.gtag) gtag('event','map_marker_open',{station:s.name});
+    });
   });
   mapReady = true;
   setTimeout(()=>map.invalidateSize(), 100);
 }
+
+function setMapOpen(open){
+  const m = $('#map');
+  if(open && !mapReady){ initMap(); return; }
+  m.style.display = open ? 'block' : 'none';
+  if(open && map) setTimeout(()=>map.invalidateSize(), 50);
+}
+function mapIsOpen(){ return $('#map').style.display === 'block'; }
+
 window.pickStation = function(name){
   $('#station').value = name;
   if(map) map.closePopup();
+  if(window.gtag) gtag('event','map_pick_station',{station:name});
+  // 지도로 지점을 고른 시점에 지도의 역할은 끝났다 → 자동 접힘 허용
+  mapUserChoice = null;
   query();
-  $('#result').scrollIntoView({behavior:'smooth'});
 };
 
 $('#mapBtn').addEventListener('click', ()=>{
-  const m = $('#map');
-  if(!mapReady){ initMap(); return; }
-  m.style.display = (m.style.display==='none') ? 'block' : 'none';
-  if(m.style.display==='block' && map) setTimeout(()=>map.invalidateSize(),50);
+  const willOpen = !mapIsOpen();
+  setMapOpen(willOpen);
+  // 사용자가 직접 연/닫은 선택은 기억한다. 이후 조회해도 함부로 접지 않음.
+  mapUserChoice = willOpen ? 'open' : 'closed';
+  // 닫아둔 선택만 기억한다. 매번 지도가 다시 열리면 성가시기 때문.
+  try{
+    if(willOpen) localStorage.removeItem('tide_map_closed');
+    else localStorage.setItem('tide_map_closed','1');
+  }catch(e){}
+  if(window.gtag) gtag('event','map_toggle',{state: willOpen ? 'open' : 'closed'});
 });
 
 // ---- 초기화 ----
