@@ -34,6 +34,11 @@
   gtag('config', '{{ ga_id }}');
 </script>
 {% endif %}
+{% if adsense_client %}
+<!-- Google AdSense: 자동광고. 게시자 ID는 서버 환경변수(ADSENSE_CLIENT)로 주입 -->
+<meta name="google-adsense-account" content="{{ adsense_client }}">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client }}" crossorigin="anonymous"></script>
+{% endif %}
 <style>
   :root{
     --bg:#0b1220; --card:#131c2e; --line:#233047; --fg:#e8edf6; --mut:#8b98b0;
@@ -214,8 +219,12 @@ async function loadStations(){
 
 function badgeInfo(day){
   const a = day.advice||{};
-  if(a.is_spring) return ['b-spring','사리'];
-  if(a.is_neap) return ['b-neap','조금'];
+  // 배지는 물때 이름(음력 위상) 기준. 조차 세기는 본문·태그에서 따로 안내한다.
+  // 구버전 API 호환: phase_* 가 없으면 조차 기준 값으로 대체.
+  const sp = ('phase_spring' in a) ? a.phase_spring : a.is_spring;
+  const np = ('phase_neap'   in a) ? a.phase_neap   : a.is_neap;
+  if(sp) return ['b-spring','사리'];
+  if(np) return ['b-neap','조금'];
   return ['b-mid','중간'];
 }
 
