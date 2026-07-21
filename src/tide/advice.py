@@ -8,17 +8,22 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from .baseline import classify, relative_position
+
 
 def _fmt(t) -> str:
     return t.strftime("%H:%M") if hasattr(t, "strftime") else str(t)
 
 
-def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> dict:
+def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float,
+                code: Optional[str] = None) -> dict:
     """조언 dict 반환.
 
     mul: {"name","phase",...} 또는 None
     extrema: [{"type":"고조"/"저조","time":datetime,"level":cm}, ...]
     range_cm: 그날 최대 조차
+    code: 관측소 코드. 주면 그 관측소의 조차 기준선으로 세기를 판정합니다.
+          (없으면 전국 고정 기준으로 대체 — baseline.py 참고)
     """
     highs = [e for e in extrema if e["type"] == "고조"]
     lows = [e for e in extrema if e["type"] == "저조"]
@@ -34,13 +39,13 @@ def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> di
     phase_spring = (phase == "사리(대조)")
     phase_neap = (phase == "조금(소조)")
 
-    # 조차 세기 — 서로 배타적인 3단계
-    if range_cm >= 600:
-        strength = "big"
-    elif range_cm < 200:
-        strength = "small"
-    else:
-        strength = "mid"
+    # 조차 세기 — 서로 배타적인 3단계.
+    # 관측소별 기준선(소조차~대조차)이 있으면 그 안에서의 상대 위치로 판정한다.
+    # 조차 절대값은 지역차가 극심해서(인천 900cm+ vs 묵호 30cm) 전국 고정 기준을
+    # 쓰면 서해는 늘 '큼', 동해는 늘 '작음'으로 굳는다.
+    strength = classify(range_cm, code)
+    rel_pos = relative_position(range_cm, code)
+    has_baseline = rel_pos is not None
 
     # 위상과 조차가 어긋나는가
     mismatch = (phase_spring and strength == "small") or (phase_neap and strength == "big")
@@ -53,18 +58,22 @@ def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> di
                     else "조금(작은물)" if phase_neap else "중간물")
         lines.append(f"오늘은 '{mul['name']}'({mul['phase']}) 물때입니다.")
 
-    # 조수 세기 — 위상과 어긋나면 '다만'으로 이어 붙여 모순을 없앤다
+    # 조수 세기 — 위상과 어긋나면 '다만'으로 이어 붙여 모순을 없앤다.
+    # 기준선이 있으면 '이 지점 기준'을 밝힌다. 같은 300cm라도 인천에선 작은 조차,
+    # 동해안에선 있을 수 없는 큰 조차이므로 비교 대상을 명시해야 오해가 없다.
     head = "다만 " if mismatch else ""
+    scope = "이 지점 기준으로 " if has_baseline else ""
     if strength == "big":
         tags.append("큰 조차")
-        lines.append(f"{head}조차는 {range_cm:.0f}cm로 큰 편이라 "
+        lines.append(f"{head}조차는 {range_cm:.0f}cm로 {scope}큰 편이라 "
                      "물이 많이 들고 많이 빠집니다.")
     elif strength == "small":
         tags.append("작은 조차")
-        lines.append(f"{head}조차는 {range_cm:.0f}cm로 작아 물 움직임이 잔잔합니다.")
+        lines.append(f"{head}조차는 {range_cm:.0f}cm로 {scope}작아 "
+                     "물 움직임이 잔잔합니다.")
     else:
         tags.append("보통 조차")
-        lines.append(f"{head}조차는 {range_cm:.0f}cm로 보통 수준입니다.")
+        lines.append(f"{head}조차는 {range_cm:.0f}cm로 {scope}보통 수준입니다.")
 
     # 이후 판단은 실제 세기(조차) 기준. 안전·갯벌 안내는 객관적 지표를 따른다.
     is_spring = strength == "big"
@@ -102,6 +111,9 @@ def make_advice(mul: Optional[dict], extrema: List[dict], range_cm: float) -> di
         "is_neap": is_neap,
         "strength": strength,          # "big" | "mid" | "small"
         "range_cm": round(range_cm),
+        # 관측소 기준선 대비 상대 위치 (0=소조차, 1=대조차). 기준선 없으면 None
+        "rel_pos": round(rel_pos, 3) if has_baseline else None,
+        "has_baseline": has_baseline,
         # 음력 위상(물때 이름) 기준 — 배지 표시용
         "phase_spring": phase_spring,
         "phase_neap": phase_neap,

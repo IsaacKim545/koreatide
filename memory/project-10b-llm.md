@@ -1,11 +1,11 @@
 ---
 name: project-10b-llm
-description: E:\LLM 프로젝트 — 10B 파라미터 LLM을 밑바닥부터 사전학습하는 PyTorch 코드베이스
+description: E:\KoreaTide 프로젝트 — 10B 파라미터 LLM을 밑바닥부터 사전학습하는 PyTorch 코드베이스
 metadata:
   type: project
 ---
 
-E:\LLM 프로젝트는 100억(10B) 파라미터 decoder-only 트랜스포머(Llama 계열)를 밑바닥부터 사전학습하는 것이 목표.
+E:\KoreaTide 프로젝트는 100억(10B) 파라미터 decoder-only 트랜스포머(Llama 계열)를 밑바닥부터 사전학습하는 것이 목표.
 
 사용자 선택(2026-07-10): 전체 코드베이스 구축 방향, 인프라는 클라우드 멀티 GPU(A100/H100), FSDP 분산학습 상정.
 
@@ -26,4 +26,4 @@ E:\LLM 프로젝트는 100억(10B) 파라미터 decoder-only 트랜스포머(Lla
 
 사용자 환경(중요): Windows, Python 3.14, torch 2.13.0 설치 완료(작동 확인 — train.py가 실제 임포트/모델생성/파라미터카운트까지 정상 실행됨. 마운트 절단은 순수 마운트 아티팩트였음이 입증). 남은 이슈는 코드 아님: (a) 데이터 파일 부재(run_demo.bat로 해결), (b) cmd에서 #주석·\줄바꿈 미동작, (c) 멀티GPU torchrun libuv 오류 → `set USE_LIBUV=0` 필요, 단일 GPU/CPU는 torchrun 없이 python 직접 실행.
 
-주의: bash 쪽 E:\LLM 마운트가 큰 파일 쓰기를 지연/절단하는 인프라 이슈 있음(실제 디스크 파일은 Read 툴 기준 정상). 향후 bash로 E:\LLM 파일 검증 시 outputs 마운트 경유 권장.
+주의: bash 쪽 E:\KoreaTide 마운트가 큰 파일 쓰기를 지연/절단하는 인프라 이슈 있음(실제 디스크 파일은 Read 툴 기준 정상). 향후 bash로 E:\KoreaTide 파일 검증 시 outputs 마운트 경유 권장.

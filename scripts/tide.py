@@ -22,7 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.tide.stations import load_stations, find_station  # noqa: E402
 from src.tide.khoa import KhoaTideClient  # noqa: E402
-from src.tide.mulddae import get_mulddae, range_phase  # noqa: E402
+from src.tide.mulddae import get_mulddae  # noqa: E402
+from src.tide.baseline import range_label  # noqa: E402
 from src.tide.keyconf import load_service_key, save_service_key, get_api_url  # noqa: E402
 
 HL_KO = {"고조": "만조", "저조": "간조"}
@@ -133,7 +134,7 @@ def main():
     print("-" * len(line))
     if highs and lows:
         rng = max(highs) - min(lows)
-        print(f" 최대 조차: {rng:.0f} cm ({range_phase(rng)})")
+        print(f" 최대 조차: {rng:.0f} cm ({range_label(rng, code)})")
 
 
 if __name__ == "__main__":

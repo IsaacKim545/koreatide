@@ -8,8 +8,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 from .khoa import KhoaTideClient
-from .mulddae import get_mulddae, range_phase
+from .mulddae import get_mulddae
 from .advice import make_advice
+from .baseline import range_label
 from .stations import station_name
 from .sun import sun_report
 
@@ -47,7 +48,8 @@ def day_report(client: KhoaTideClient, code: str, d: date,
         if highs and lows else 0.0
 
     mul = get_mulddae(datetime(d.year, d.month, d.day), offset=offset)
-    advice = make_advice(mul, ex, range_cm)
+    # code를 넘겨 그 관측소의 조차 기준선으로 세기를 판정하게 한다
+    advice = make_advice(mul, ex, range_cm, code=code)
 
     mul_out = None
     if mul:
@@ -62,7 +64,7 @@ def day_report(client: KhoaTideClient, code: str, d: date,
                      "time": e["time"].strftime("%H:%M"),
                      "level": round(e["level"])} for e in ex],
         "range_cm": round(range_cm),
-        "range_label": range_phase(range_cm),
+        "range_label": range_label(range_cm, code),
         "advice": advice,
         "sun": sun_report(meta.get("lat"), meta.get("lot"), d),
     }

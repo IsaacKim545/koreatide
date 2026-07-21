@@ -60,7 +60,13 @@ def get_mulddae(d, offset: int = 0) -> Optional[dict]:
 
 
 def range_phase(tide_range_cm: float) -> str:
-    """조차(cm)로 대조/소조 대략 판정 (객관적 지표, 참고용)."""
+    """조차(cm)로 대조/소조 대략 판정 — 전국 고정 기준(구버전).
+
+    DEPRECATED: 조차 절대값은 관측소별 스케일 차이가 극심해(인천 900cm+ vs 묵호 30cm)
+    전국 고정 기준으로는 서해가 늘 '큰 조차', 동해가 늘 '작은 조차'로 굳습니다.
+    관측소별 기준선을 쓰는 baseline.range_label(range_cm, code) 를 사용하세요.
+    이 함수는 기준선 데이터가 없을 때의 대체 경로로만 남아 있습니다.
+    """
     if tide_range_cm >= 700:
         return "매우 큰 조차(사리급)"
     if tide_range_cm >= 400:

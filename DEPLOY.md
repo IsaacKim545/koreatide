@@ -18,7 +18,7 @@ Flask 앱을 Render(PaaS)에 올리고 `koreatide.com` 도메인을 연결합니
 
 ## 2) GitHub에 올리기
 
-프로젝트 폴더(E:\LLM)에서:
+프로젝트 폴더(E:\KoreaTide)에서:
 ```
 git init
 git add .
@@ -55,6 +55,15 @@ Render 서비스 → **Environment** → **Add Environment Variable**:
 
 설정하면 페이지에 gtag가 자동 삽입되고, '조회' 시 `query_tide` 이벤트도 전송됩니다.
 (설정 안 하면 애널리틱스 코드는 삽입되지 않습니다.)
+
+**(선택) 구글 애드센스**: 승인받은 게시자 ID가 있으면 환경변수를 추가하세요.
+- Key: `ADSENSE_CLIENT`
+- Value: `ca-pub-XXXXXXXXXXXXXXXX` (애드센스 → 계정 정보의 게시자 ID)
+
+설정하면 (1) 페이지 `<head>`에 애드센스 로더 스크립트와 `google-adsense-account` 메타태그가
+자동 삽입되고, (2) `https://koreatide.com/ads.txt` 가 `google.com, pub-…, DIRECT, f08c47fec0942fa0`
+로 자동 게시됩니다. 설정 안 하면 광고 코드는 삽입되지 않고 `/ads.txt` 는 404입니다.
+자세한 신청·승인 절차는 `marketing/애드센스-처음부터-가이드.md` 참고.
 
 ## 5) 배포 & 임시주소 확인
 
